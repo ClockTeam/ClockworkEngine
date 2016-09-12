@@ -1,99 +1,63 @@
-################
-# CMAKE RULES! #
-################
-# Huge thanks to mxaddict for setting up the CMake build system!
+cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
 
-# we need features that are 2.6 >= dependent
-cmake_minimum_required(VERSION 2.6)
+project(Clockwork)
 
-# lets name the project
-project(3DEngineCpp)
+if($ENV{BUILD_NUMBER})
+  set(BUILD_NUMBER $ENV{BUILD_NUMBER})
+else()
+  set(BUILD_NUMBER 0)
+endif()
 
-# add the -c and -Wall flags
-add_definitions(
-	-c
-	-Wall
-)
+set(CLOCKWORK_NAME "Clockwork")
+set(CLOCKWORK_VERSION "0.0.3.${BUILD_NUMBER}")
+set(CLOCKWORK_BRIEF "${MYLIB_NAME} is a 3D game engine designed to help me experiment.")
 
-if ( CMAKE_BUILD_TYPE STREQUAL "" )
-	# CMake defaults to leaving CMAKE_BUILD_TYPE empty. This screws up
-	# differentiation between debug and release builds.
-	set(
-		CMAKE_BUILD_TYPE
-			"Debug"
-		CACHE STRING
-			"Choose the type of build, options are: None (CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) \"Debug\" \"Release\" \"RelWithDebInfo\" \"MinSizeRel\"."
-		FORCE
-	)
-endif ( CMAKE_BUILD_TYPE STREQUAL "" )
+option(CLOCKWORK_EDITOR "Enables building the editor" ON)
 
-if ( CMAKE_BUILD_TYPE STREQUAL "Release" )
-add_definitions( -O2 )
-endif ( CMAKE_BUILD_TYPE STREQUAL "Release" )
+set_property( GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Lets LOAD app our headers!
-file(GLOB_RECURSE HDRS ${3DEngineCpp_SOURCE_DIR}/src/Engine/*.h)
+# code coverage options
+set(GCOV_FLAGS "-fprofile-arcs -ftest-coverage")
 
-# Lets LOAD app our sources!
-file(GLOB_RECURSE SRCS
-	${3DEngineCpp_SOURCE_DIR}/src/Engine/*.cpp
-	${3DEngineCpp_SOURCE_DIR}/src/Engine/*.c
-)
+set(DEBUG_FLAGS "-g -O0 -Wall")
+set(RELEASE_FLAGS "-O3")
 
-# Define the executable
-add_library(3DEngineCpp ${HDRS} ${SRCS})
+set(CMAKE_CXX_FLAGS ${RELEASE_FLAGS})
+set(CMAKE_C_FLAGS ${RELEASE_FLAGS})
 
-# Lets LOAD app our headers!
-file(GLOB_RECURSE GAMEHDRS ${3DEngineCpp_SOURCE_DIR}/src/Test/*.h)
+set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_FLAGS})
+set(CMAKE_CXX_FLAGS_DEBUG ${GCOV_FLAGS})
+set(CMAKE_C_FLAGS_DEBUG ${DEBUG_FLAGS})
+set(CMAKE_C_FLAGS_DEBUG ${GCOV_FLAGS})
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG ${GCOV_FLAGS})
 
-# Lets LOAD app our sources!
-file(GLOB_RECURSE GAMESRCS
-	${3DEngineCpp_SOURCE_DIR}/src/Test/*.cpp
-	${3DEngineCpp_SOURCE_DIR}/src/Test/*.c
-)
+set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
-add_executable(Game ${GAMEHDRS} ${GAMESRCS})
+MACRO(SOURCE_GROUP_BY_FOLDER target)
+  SET(SOURCE_GROUP_DELIMITER "/")
+  SET(last_dir "")
+  SET(files "")
+  FOREACH(file ${${target}_SRC} ${${target}_HEADERS})
+    file(RELATIVE_PATH relative_file "${PROJECT_SOURCE_DIR}/${target}" ${file})
+    GET_FILENAME_COMPONENT(dir "${relative_file}" PATH)
+    IF (NOT "${dir}" STREQUAL "${last_dir}")
+      IF (files)
+        SOURCE_GROUP("${last_dir}" FILES ${files})
+      ENDIF (files)
+      SET(files "")
+    ENDIF (NOT "${dir}" STREQUAL "${last_dir}")
+    SET(files ${files} ${file})
+    SET(last_dir "${dir}")
+  ENDFOREACH(file)
+  IF (files)
+    SOURCE_GROUP("${last_dir}" FILES ${files})
+  ENDIF (files)
+ENDMACRO(SOURCE_GROUP_BY_FOLDER)
 
+add_subdirectory(src)
 
-# We need a CMAKE_DIR with some code to find external dependencies
-SET(3DEngineCpp_CMAKE_DIR "${3DEngineCpp_SOURCE_DIR}/cmake")
+SOURCE_GROUP_BY_FOLDER(Clockwork)
 
-#######################################
-# LOOK for the packages that we need! #
-#######################################
-
-# OpenGL
-find_package(OpenGL REQUIRED)
-
-# GLEW
-INCLUDE(${3DEngineCpp_CMAKE_DIR}/FindGLEW.cmake)
-
-# SDL2
-INCLUDE(${3DEngineCpp_CMAKE_DIR}/FindSDL2.cmake)
-
-# ASSIMP
-INCLUDE(${3DEngineCpp_CMAKE_DIR}/FindASSIMP.cmake)
-
-# Define the include DIRs
-include_directories(
-	${3DEngineCpp_SOURCE_DIR}/headers
-	${3DEngineCpp_SOURCE_DIR}/sources
-	${HDRS}
-	${OPENGL_INCLUDE_DIRS}
-	${GLEW_INCLUDE_DIRS}
-	${SDL2_INCLUDE_DIRS}
-	${ASSIMP_INCLUDE_DIRS}
-)
-
-# Define the link libraries
-target_link_libraries( 3DEngineCpp
-	${OPENGL_LIBRARIES}
-	${GLEW_LIBRARIES}
-	${SDL2_LIBRARIES}
-	${ASSIMP_LIBRARIES}
-)
-
-# Define the link libraries
-target_link_libraries( Game
-	3DEngineCpp
-)
+set_target_properties(GLEW PROPERTIES FOLDER 3rdParty)
+set_target_properties(SDL PROPERTIES FOLDER 3rdParty)
+set_target_properties(Assimp PROPERTIES FOLDER 3rdParty)
