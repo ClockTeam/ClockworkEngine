@@ -11,9 +11,9 @@ public:
 	virtual ~Game() {}
 
 	virtual void Init(const Window& window) {}
-	void ProcessInput(const Input& input, float delta);
-	void Update(float delta);
-	void Render(RenderingEngine* renderingEngine);
+	virtual void ProcessInput(const Input& input, float delta);
+	virtual void Update(float delta);
+	virtual void Render(RenderingEngine* renderingEngine);
 	
 	inline double DisplayInputTime(double dividend) { return m_inputTimer.DisplayAndReset("Input Time: ", dividend); }
 	inline double DisplayUpdateTime(double dividend) { return m_updateTimer.DisplayAndReset("Update Time: ", dividend); }
